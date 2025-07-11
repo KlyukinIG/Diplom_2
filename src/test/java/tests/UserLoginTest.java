@@ -1,10 +1,13 @@
 package tests;
 
 import io.qameta.allure.Description;
+import io.restassured.response.Response;
 import model.client.LoginUser;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import util.BaseTest;
+
+import static org.hamcrest.Matchers.equalTo;
 
 public class UserLoginTest extends BaseTest {
 
@@ -13,7 +16,8 @@ public class UserLoginTest extends BaseTest {
     @Test
     public void successLoginUser() {
         response = userSteps().stepCreateUser(createUser);
-        userSteps().stepLoginUser(loginUser);
+        Response actualResp = userSteps().stepLoginUser(loginUser);
+        actualResp.then().statusCode(200).assertThat().body("user.email", equalTo(createUser.getEmail()));
     }
 
     @DisplayName("Авторизация пользователя с неверным логином и паролем")
@@ -21,6 +25,7 @@ public class UserLoginTest extends BaseTest {
     @Test
     public void LoginWithWrongLoginAndPassword() {
         response = userSteps().stepCreateUser(createUser);
-        userSteps().stepLoginUser(new LoginUser("wrong_login", "wrong_password"));
+        Response actualResp = userSteps().stepLoginUser(new LoginUser("wrong_login", "wrong_password"));
+        actualResp.then().statusCode(401).assertThat().body("message", equalTo("email or password are incorrect"));
     }
 }

@@ -1,7 +1,7 @@
 package tests;
 
 import io.qameta.allure.Description;
-import model.client.CreateUserResponse;
+import io.restassured.response.Response;
 import model.order.CreateOrder;
 import model.order.IngredientListResponse;
 import org.junit.jupiter.api.DisplayName;
@@ -10,6 +10,8 @@ import util.BaseTest;
 
 import java.util.List;
 import java.util.UUID;
+
+import static org.hamcrest.Matchers.equalTo;
 
 public class CreateOrderTest extends BaseTest {
 
@@ -22,18 +24,21 @@ public class CreateOrderTest extends BaseTest {
         IngredientListResponse ingredients = orderSteps().stepGetListIngredient();
         List<String> ingredientsList = List.of(ingredients.getData().get(0).get_id(), ingredients.getData().get(1).get_id());
         CreateOrder order = new CreateOrder(ingredientsList);
-        orderSteps().stepCreateOrder(order, response.getAccessToken());
+        Response responseOrder = orderSteps().stepCreateOrder(order, response.path("accessToken"));
+        responseOrder.then().statusCode(200).assertThat().body("success", equalTo(true));
     }
 
     @DisplayName("Создание заказа не авторизованного пользователя c ингредиентами")
-    @Description("В тесте проверяется ответ системы на создание заказа от не авторизованного пользователя c ингредиентами")
+    @Description("В тесте проверяется ответ системы на создание заказа c ингредиентами и пустым хедером Authorization")
     @Test
     public void createOrderWithoutAth() {
         response = userSteps().stepCreateUser(createUser);
         IngredientListResponse ingredients = orderSteps().stepGetListIngredient();
         List<String> ingredientsList = List.of(ingredients.getData().get(0).get_id(), ingredients.getData().get(1).get_id());
         CreateOrder order = new CreateOrder(ingredientsList);
-        orderSteps().stepCreateOrder(order, "wrong_token");
+        Response responseOrder = orderSteps().stepCreateOrder(order, "");
+        responseOrder.then().statusCode(200).assertThat().body("success", equalTo(true));
+        ;
     }
 
     @DisplayName("Создание заказа авторизованного пользователя без ингредиентов")
@@ -43,7 +48,8 @@ public class CreateOrderTest extends BaseTest {
         response = userSteps().stepCreateUser(createUser);
         userSteps().stepLoginUser(loginUser);
         CreateOrder order = new CreateOrder();
-        orderSteps().stepCreateOrder(order, response.getAccessToken());
+        Response actualResp = orderSteps().stepCreateOrder(order, response.path("accessToken"));
+        actualResp.then().statusCode(400).assertThat().body("message", equalTo("Ingredient ids must be provided"));
     }
 
     @DisplayName("Создание заказа авторизованного пользователя с неверным хешом ингредиента")
@@ -53,7 +59,8 @@ public class CreateOrderTest extends BaseTest {
         response = userSteps().stepCreateUser(createUser);
         String invalidIngredientId = UUID.randomUUID().toString().replace("-", "").substring(0, 24);
         CreateOrder order = new CreateOrder(List.of(invalidIngredientId));
-        orderSteps().stepCreateOrder(order, response.getAccessToken());
+        Response actualResp = orderSteps().stepCreateOrder(order, response.path("accessToken"));
+        actualResp.then().statusCode(400).assertThat().body("message", equalTo("One or more ids provided are incorrect"));
     }
 
 }

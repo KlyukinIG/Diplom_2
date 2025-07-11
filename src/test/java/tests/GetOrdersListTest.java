@@ -1,10 +1,12 @@
 package tests;
 
 import io.qameta.allure.Description;
-import model.client.CreateUserResponse;
+import io.restassured.response.Response;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import util.BaseTest;
+
+import static org.hamcrest.Matchers.equalTo;
 
 public class GetOrdersListTest extends BaseTest {
 
@@ -12,18 +14,20 @@ public class GetOrdersListTest extends BaseTest {
     @Description("В тесте проверяется ответ системы на запрос списка заказов авторизованного пользователя")
     @Test
     public void getOrderListWithAuth() {
-        CreateUserResponse response = userSteps().stepCreateUser(createUser);
+        response = userSteps().stepCreateUser(createUser);
         userSteps().stepLoginUser(loginUser);
-        orderSteps().stepGetOrdersList(response.getAccessToken());
+        Response actualResp = orderSteps().stepGetOrdersList(response.path("accessToken"));
+        actualResp.then().statusCode(200).assertThat().body("success", equalTo(true));
     }
 
     @DisplayName("Получение списка заказов не авторизованного пользователя")
     @Description("В тесте проверяется ответ системы на запрос списка заказов не авторизованного пользователя")
     @Test
     public void getOrderListWithoutAuth() {
-        CreateUserResponse response = userSteps().stepCreateUser(createUser);
+        response = userSteps().stepCreateUser(createUser);
         userSteps().stepLoginUser(loginUser);
-        orderSteps().stepGetOrdersList("");
+        Response actualResp = orderSteps().stepGetOrdersList("");
+        actualResp.then().statusCode(401).assertThat().body("message", equalTo("You should be authorised"));
     }
 
 }

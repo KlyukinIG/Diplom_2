@@ -1,6 +1,7 @@
 package util;
 
 import io.restassured.RestAssured;
+import io.restassured.response.Response;
 import model.client.CreateUser;
 import model.client.CreateUserResponse;
 import model.client.LoginUser;
@@ -14,7 +15,7 @@ public class BaseTest {
     protected CreateUser createUser;
     protected LoginUser loginUser;
     protected String accessToken;
-    protected CreateUserResponse response;
+    protected Response response;
 
     @BeforeEach
     public void setUp() {
@@ -26,7 +27,7 @@ public class BaseTest {
     @AfterEach
     public void tearDown() {
         try {
-            accessToken = response.getAccessToken();
+            accessToken = response.path("accessToken");
             if (accessToken != null) {
                 userSteps().stepDeleteUser(accessToken);
             }
